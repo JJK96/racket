@@ -3,4 +3,4 @@ My library for racket, it provides some functions that I think are useful.
 Install with 
 
   git pull <url> util
-  raco pkg install --link
+  raco pkg install --link util
