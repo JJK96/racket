@@ -1,0 +1,3 @@
+My library for racket, it provides some functions that I think are useful.
+
+Install with `raco pkg install --link`
