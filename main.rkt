@@ -1,15 +1,26 @@
 #lang racket
-(require (rename-in racket/base (+ base:+) (= base:=)))
+(require (rename-in racket/base (+ base:+) (= base:=) (- base:-)))
 (require racket/match)
 
-(provide + ref)
+(provide + - = ref)
+
+(define (from-char x)
+  (cond
+     [(char? x) (char->integer x)]
+     [else x]))
 
 (define (+ . args)
   (cond [(andmap string? args) (apply string-append args)]
+        [(ormap char? args) (integer->char (apply base:+ (map from-char args)))]
         [else (apply base:+ args)]))
+
+(define (- . args)
+  (cond [(ormap char? args) (integer->char (apply base:- (map from-char args)))]
+        [else (apply base:- args)]))
 
 (define (= . args)
   (cond [(andmap string? args) (apply string=? args)]
+        [(andmap char? args) (apply char=? args)]
         [else (apply base:= args)]))
 
 (define-syntax-rule (ref container . args)
