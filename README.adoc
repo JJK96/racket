@@ -1,3 +1,6 @@
 My library for racket, it provides some functions that I think are useful.
 
-Install with `raco pkg install --link`
+Install with 
+
+  git pull git@github.com:JJK96/racket.git util
+  raco pkg install --link util
