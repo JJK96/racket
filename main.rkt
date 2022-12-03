@@ -1,5 +1,5 @@
 #lang racket
-(require (rename-in racket/base (+ base:+)))
+(require (rename-in racket/base (+ base:+) (= base:=)))
 (require racket/match)
 
 (provide + ref)
@@ -8,11 +8,16 @@
   (cond [(andmap string? args) (apply string-append args)]
         [else (apply base:+ args)]))
 
+(define (= . args)
+  (cond [(andmap string? args) (apply string=? args)]
+        [else (apply base:= args)]))
+
 (define-syntax-rule (ref container . args)
   (let 
     ([func (cond [(list? container) list-ref]
                  [(hash? container) hash-ref]
-                 [(vector? container) vector-ref])])
+                 [(vector? container) vector-ref]
+                 [(string? container) string-ref])])
     (func container . args)))
      
 (define mylist (list 1 2 3))
