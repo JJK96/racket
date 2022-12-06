@@ -1,21 +1,28 @@
 #lang racket
-(require (rename-in racket/base (+ base:+) (= base:=) (- base:-)))
+(require (rename-in racket/base (+ base:+) (= base:=) (- base:-) (substring base:substring)))
 (require racket/match)
 
-(provide + - = ref)
+(provide + - = ref char->number substring)
+
+(define-syntax-rule (substring . args)
+  (with-handlers ([exn:fail:contract? (lambda (e) "")])
+    (base:substring . args)))
 
 (define (from-char x)
   (cond
      [(char? x) (char->integer x)]
      [else x]))
 
+(define (char->number char)
+  (- (char->integer char) 48))
+
 (define (+ . args)
   (cond [(andmap string? args) (apply string-append args)]
-        [(ormap char? args) (integer->char (apply base:+ (map from-char args)))]
+        [(ormap char? args) (apply base:+ (map from-char args))]
         [else (apply base:+ args)]))
 
 (define (- . args)
-  (cond [(ormap char? args) (integer->char (apply base:- (map from-char args)))]
+  (cond [(ormap char? args) (apply base:- (map from-char args))]
         [else (apply base:- args)]))
 
 (define (= . args)
