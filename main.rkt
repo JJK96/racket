@@ -2,8 +2,17 @@
 (require (rename-in racket/base (+ base:+) (= base:=) (- base:-) (substring base:substring)))
 (require (rename-in racket/class (new base:new) (object% base:object%)))
 (require racket/match)
+(require racket/generator)
 
-(provide + - = ref char->number substring with-input object% new)
+(provide + - = 
+  char->number 
+  substring
+  with-input
+  object%
+  new
+  in-string
+  generator
+  for/match)
 
 (define-syntax-rule (substring . args)
   (with-handlers ([exn:fail:contract? (lambda (e) "")])
@@ -69,6 +78,22 @@
 (define-syntax-rule (new myclass . rest)
   (let ([classname (~v myclass)])
     (base:new myclass [_classname classname] . rest)))
+
+(define (in-string str)
+  (in-list (string->list str)))
+
+(define-syntax (generator stx)
+    (syntax-parse stx
+        [(_ body ...)
+         #'(sequence->stream (in-generator body ...))]))
+
+(define-syntax (for/match stx)
+    (syntax-parse stx
+        [(_ ([pat seq-expr]) body ...)
+         #:with x (generate-temporary)
+         #'(for ([x seq-expr])
+              (match x
+               [pat body ...]))]))
 
 
 (define mylist (list 1 2 3))
