@@ -1,30 +1,38 @@
 #lang racket
-(require (rename-in racket/class (new base:new) (object% base:object%)))
-(require racket/match)
-(require racket/generator)
-(require (for-syntax racket/syntax))
-(require syntax/parse (for-syntax syntax/parse))
-(require
-    threading
-    data/collection)
-(require (rename-in (only-in racket/base + = - substring) 
-             (+ base:+) (= base:=) (- base:-) (substring base:substring)))
+(require 
+  (rename-in racket/class (new base:new) (object% base:object%))
+  (rename-in (only-in racket/base + = - substring) 
+             (+ base:+) (= base:=) (- base:-) (substring base:substring))
+  racket/match
+  racket/generator
+  syntax/parse 
+  threading
+  data/collection
+  json
+  (submod json for-extension)
+  (for-syntax racket/syntax)
+  (for-syntax syntax/parse))
 
 (provide + - = 
   char->number 
   substring
   with-input
+  with-output
   object%
   new
   in-string
   generator
   for/match
   for/list/match
+  for/last/match
+  for/first/match
   lambda/match
   bytes->string/utf-16
   yield
   (all-from-out threading)
-  (all-from-out data/collection))
+  (all-from-out data/collection)
+  read-json
+  write-json)
 
 (define-syntax-rule (substring . args)
   (with-handlers ([exn:fail:contract? (lambda (e) "")])
@@ -56,6 +64,10 @@
 (define-syntax-rule (with-input filename . rest)
     (with-input-from-file filename
       (lambda () . rest))) 
+
+(define-syntax-rule (with-output filename . rest)
+  (with-output-to-file filename
+    (lambda () . rest)))
 
 (define object%
   (class* base:object% (printable<%>)
@@ -116,6 +128,12 @@
 (define-syntax (for/list/match stx)
   (generic-for/match stx #'for/list))
 
+(define-syntax (for/last/match stx)
+  (generic-for/match stx #'for/last))
+
+(define-syntax (for/first/match stx)
+  (generic-for/match stx #'for/first))
+
 (define-syntax (lambda/match stx)
   (syntax-parse stx
     [(_ pat body ...)
@@ -127,7 +145,37 @@
 (define (bytes->string/utf-16 bytes)
     (define converter (bytes-open-converter "UTF-16le" "UTF-8"))
     (let-values ([(bytes1 x y) (bytes-convert converter bytes)]) 
-         (bytes->string/utf-8 bytes1)))
+         (bytes->string/utf-8 bytes1))) 
+        
+(define nop (lambda (x) x))
+
+(define (read-json [i (current-input-port)]
+                   #:null [jsnull (json-null)]
+                   #:replace-malformed-surrogate? [replace-malformed-surrogate? #f])
+  (read-json* 'read-json i
+              #:replace-malformed-surrogate? replace-malformed-surrogate?
+              #:null jsnull
+              #:make-object make-immutable-hasheq
+              #:make-list values
+              #:make-key nop
+              #:make-string values))
+
+(define (write-json x [o (current-output-port)]
+                    #:null [jsnull (json-null)]
+                    #:encode [enc 'control]
+                    #:indent [indent #f])
+  (write-json* 'write-json x o
+               #:null jsnull
+               #:encode enc
+               #:indent indent
+               #:object-rep? hash?
+               #:object-rep->hash values
+               #:list-rep? list?
+               #:list-rep->list values
+               #:key-rep? string?
+               #:key-rep->string nop
+               #:string-rep? string?
+               #:string-rep->string values))
   
 (define mylist (list 1 2 3))
 (define mymap (make-hash '[("a" . 1) ("b" . 2) ("c" . 3)]))
